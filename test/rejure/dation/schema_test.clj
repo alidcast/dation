@@ -5,18 +5,19 @@
 (deftest reader-edn-test
   (let [read-edn dschema/read-edn]
     (testing "reads edn literals correctly"
-      (testing "#ent converts shorthand vector to datomic attribute map"
+      (testing "#attr converts shorthand vector to datomic attribute map"
         (testing "form: [ident type cardinality]"
-          (is (= (read-edn "[#ent [:user/username :db.type/string :db.cardinality/one]]")
+          (is (= (read-edn "[#attr [:user/username :db.type/string :db.cardinality/one]]")
                  [{:db.ident       :user/username
                    :db.type        :db.type/string
                    :db.cardinality :db.cardinality/one}])))
         (testing "form: [ident type cardinality unique]"
-          (is (= (read-edn "[#ent [:user/username :db.type/string :db.cardinality/one :db.unique/identity]]")
+          (is (= (read-edn "[#attr [:user/username :db.type/string :db.cardinality/one :db.unique/identity]]")
                  [{:db.ident       :user/username
                    :db.type        :db.type/string
                    :db.cardinality :db.cardinality/one
-                   :db.unique      :db.unique/identity}])))
+                   :db.unique      :db.unique/identity}]))))
+      (testing "#ent converts shorthand vector to datomic attribute map"
         (testing "form: {ident attrs-vector}"
           (is (= (read-edn "[#ent #:user{:username [:db.type/string :db.cardinality/one]}]")
                  [[{:db.ident       :user/username
