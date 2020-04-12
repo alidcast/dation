@@ -37,10 +37,15 @@ Then read your schema confirmation and install the attributes:
 
 ## Rationale
 
-Datomic attribute declarations are verbose and m
+Dation, motivation: 
 
-1. Explicit schema declaration as data in EDN files, not in code.
-2. 
+1. Datomic attribute declarations feel verbose and while some libraries have attempted to make it easier to declare attributes they either expect you to do so via code or create their own custom DSL.
+2. There is no built-in way to manage schema changes in Datomic. Some existing libraries help handle migrations but only work with Datomic On-Prem, and none are specifically tailored toward the accretion-only model Datomic Cloud encourages.
 
+Design goals:
 
-## Usage
+1. Make Datomic schema configurations explicit, taking advantage of EDN and reader literals.
+2. Provide shorthands (not DSLs) for declaring datomic attribute maps, without sacrificing semantic meaning.
+3. Provide a reliable yet simple way to handle schema accretions, supporting attribute installs and data migrations.
+4. Work with Datomic Cloud (and optionally Datomic On-Prem).
+
