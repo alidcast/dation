@@ -5,16 +5,29 @@
 (deftest reader-edn-test
   (let [read-edn dschema/read-edn]
     (testing "reads edn literals correctly"
-      (testing "#attr converts shorthand vector to datomic attribute map"
-        (testing "[ident, type, cardinality]"
-          (is (= (read-edn "[#attr [:user/username :db.type/string :db.cardinality/one]]")
+      (testing "#ent converts shorthand vector to datomic attribute map"
+        (testing "form: [ident type cardinality]"
+          (is (= (read-edn "[#ent [:user/username :db.type/string :db.cardinality/one]]")
                  [{:db.ident       :user/username
                    :db.type        :db.type/string
                    :db.cardinality :db.cardinality/one}])))
-        (testing "[ident, type, cardinality, unqiue]"
-          (is (= (read-edn "[#attr [:user/username :db.type/string :db.cardinality/one :db.unique/identity]]")
+        (testing "form: [ident type cardinality unique]"
+          (is (= (read-edn "[#ent [:user/username :db.type/string :db.cardinality/one :db.unique/identity]]")
                  [{:db.ident       :user/username
                    :db.type        :db.type/string
                    :db.cardinality :db.cardinality/one
-                   :db.unique      :db.unique/identity}])))))))
+                   :db.unique      :db.unique/identity}])))
+        (testing "form: {ident attrs-vector}"
+          (is (= (read-edn "[#ent #:user{:username [:db.type/string :db.cardinality/one]}]")
+                 [[{:db.ident       :user/username
+                    :db.type        :db.type/string
+                    :db.cardinality :db.cardinality/one}]])))
+        (testing "form: {ident attrs-map}"
+          (is (= (read-edn "#ent #:user{:username {:db.type :db.type/string
+                                                      :db.cardinality :db.cardinality/one}}")
+
+
+                 [{:db.ident       :user/username
+                   :db.type        :db.type/string
+                   :db.cardinality :db.cardinality/one}])))))))
 
