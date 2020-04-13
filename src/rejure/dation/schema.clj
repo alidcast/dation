@@ -1,5 +1,15 @@
-(ns rejure.dation.schema "Define Datomic Schemas with EDN."
-  (:require [clojure.edn :as edn]))
+(ns rejure.dation.schema "Datomic schema accretion tools."
+  (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]
+            [datomic.client.api :as d]
+            [rejure.dation.attr :as d-attr]
+            ))
+
+;; # Schema Accretion Tools
+;; Provides config reader, attribute installer, and migration runner.
+
+;; ## Config Reader 
+;; Provides shortshands for declaring datomic schema attributes.
 
 ;; TODOS
 ;; ## installs
@@ -76,3 +86,44 @@
 (defn read-edn "Reads schema as edn string `s`."
   [s] (edn/read-string {:readers (create-readers)}
                        s))
+
+;; ## Attribute Installer
+;; Ensures that given schema attributes are install in database.
+
+(defn ensure-dation-attrs "Ensures that attributes used for tracking schema accretions are installed."
+  [conn]
+  (when-not (d-attr/exists? (d/db conn) :dation.schema/install)
+    (d/transact conn (ent->datomic-attr-map
+                      {:dation.schema/name    [:db.type/keyword :db.cardinality/many]
+                       :dation.schema/version [:db.type/string  :db.cardinality/one]}))))
+
+(defn installed? "Checks if `db` has attributes of schema name `sch-name` installed."
+  [db sch-name]
+  (and (-> (d/q {:query '[:find ?e
+                          :in $ ?sn
+                          :where [?e :dation.schema/name ?sn]]
+                 :args [db sch-name]})
+           seq
+           boolean)))
+
+(defn ensure-schemas
+  "Ensure that schemas are installed.
+      schema-map    a map from schema names to schema installation
+                    maps. A schema installation map contains two
+                    keys: :txes is the data to install, and :requires
+                    is a list of other schema names that must also
+                    be installed
+      schema-names  the names of schemas to install"
+  [conn schema-map & schema-names]
+  (ensure-dation-attrs conn)
+  (doseq [schema-name schema-names]
+    (when-not (installed? (d/db conn) schema-name)
+      (let [{:keys [requires txes]} (get schema-map schema-name)]
+        (apply ensure-schemas conn schema-map requires)
+        (if txes
+          (doseq [tx txes]
+            (d/transact conn {:tx-data (cons {;; TODO
+                                              :dation.schema/name schema-name}
+                                             tx)}))
+          (throw (ex-info (str "No data provided for schema" schema-name)
+                          {:schema/missing schema-name})))))))

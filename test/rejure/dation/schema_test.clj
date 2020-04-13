@@ -9,26 +9,26 @@
         (testing "form: [ident type cardinality]"
           (is (= (read-edn "[#attr [:user/username :db.type/string :db.cardinality/one]]")
                  [{:db/ident       :user/username
-                   :db/type        :db.type/string
+                   :db/valueType  :db.type/string
                    :db/cardinality :db.cardinality/one}])))
         (testing "form: [ident type cardinality unique]"
           (is (= (read-edn "[#attr [:user/username :db.type/string :db.cardinality/one :db.unique/identity]]")
                  [{:db/ident       :user/username
-                   :db/type        :db.type/string
+                   :db/valueType        :db.type/string
                    :db/cardinality :db.cardinality/one
                    :db/unique      :db.unique/identity}]))))
       (testing "#ent converts shorthand vector to datomic attribute map"
         (testing "form: {ident attrs-map}"
-          (is (= (read-edn "#ent #:user{:username {:db/type        :db.type/string
+          (is (= (read-edn "#ent #:user{:username {:db/valueType  :db.type/string
                                                    :db/cardinality :db.cardinality/one}}")
 
 
                  [{:db/ident       :user/username
-                   :db/type        :db.type/string
+                   :db/valueType  :db.type/string
                    :db/cardinality :db.cardinality/one}])))
         (testing "form: {ident attrs-vector}"
           (is (= (read-edn "[#ent #:user{:username [:db.type/string :db.cardinality/one]}]")
                  [[{:db/ident       :user/username
-                    :db/type        :db.type/string
+                    :db/valueType  :db.type/string
                     :db/cardinality :db.cardinality/one}]])))))))
 
