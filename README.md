@@ -4,6 +4,8 @@ Dation provides tools for managing Datomic attribute installs and data migration
 
 ## Preview
 
+Imagine you're setting up a user model in your database.
+
 First configure your Datomic schema in EDN with reader literal shorthands we provide: 
 
 ```clj 
@@ -11,14 +13,15 @@ First configure your Datomic schema in EDN with reader literal shorthands we pro
 {:name     :app-schema
  :version  "1.2"
  ;; Attribute Installs
+ ;; Setting up user attributes
  :installs [#ent #:user{:username  [:db.type/string :db.cardinality/one :db.unique/identity]
                         :email     [:db.type/string :db.cardinality/one :db.unique/identity]
                         :password  [:db.type/string :db.cardinality/one]}
-
             #ent #:note{:title  [:db.type/string :db.cardinality/one :db.unique/identity]
                         :owner  [:db.type/ref    :db.cardinality/one true]}
             #spec [:file.spec/owner-fk [:file/owner] 'myapp.schema/file-owner?]]
  ;; Data Migrations
+ ;; Handling change of user email attribute
  :migrations [{:name           :add-default-note-title
                :tx-fn          'dation.migrations/foo}]} 
 ```
