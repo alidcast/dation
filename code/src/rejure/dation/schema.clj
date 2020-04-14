@@ -1,6 +1,6 @@
 (ns rejure.dation.schema "Datomic schema accretion tools."
   (:require [clojure.edn :as edn]
-            [clojure.java.io :as io]
+            [clojure.string :as str]
             [datomic.client.api :as d]
             [rejure.dation.attr :as d-attr]
             ))
@@ -83,7 +83,13 @@
    'spec spec->datomic-attr-map
    'enum enum->datomic-attr-map})
 
-(defn read-edn "Reads schema as edn string `s`."
+(defn read-edn 
+  "Reads schema configuration edn string `s`.
+   THe config should be a map with the following properties: 
+      :version     Current version number of database. 
+                   Should be incremented whenever :install or :migrations change. 
+      :installs    List of schema attributes to install.
+      :migrations  List of data migrations to run."
   [s] (edn/read-string {:readers (create-readers)}
                        s))
 
@@ -93,37 +99,40 @@
 (defn ensure-dation-attrs "Ensures that attributes used for tracking schema accretions are installed."
   [conn]
   (when-not (d-attr/exists? (d/db conn) :dation.schema/install)
-    (d/transact conn (ent->datomic-attr-map
-                      {:dation.schema/name    [:db.type/keyword :db.cardinality/many]
-                       :dation.schema/version [:db.type/string  :db.cardinality/one]}))))
+    (d/transact conn {:tx-data (ent->datomic-attr-map
+                                {:dation.schema/name    [:db.type/keyword :db.cardinality/many]
+                                 :dation.schema/version [:db.type/string  :db.cardinality/one]})})))
 
-(defn installed? "Checks if `db` has attributes of schema name `sch-name` installed."
-  [db sch-name]
+;; also check version!
+;; check less than current version..
+(defn installed? "Checks if `db` has attributes of schema name `sn` and version `sv` installed."
+  [db sn sv]
   (and (-> (d/q {:query '[:find ?e
-                          :in $ ?sn
-                          :where [?e :dation.schema/name ?sn]]
-                 :args [db sch-name]})
+                          :in $ ?sn ?sv
+                          :where [?e :dation.schema/name ?sn]
+                                 [?e :dation.schema/version ?sv]]
+                 :args [db sn sv]})
            seq
            boolean)))
 
-(defn ensure-schemas
-  "Ensure that schemas are installed.
-      schema-map    a map from schema names to schema installation
-                    maps. A schema installation map contains two
-                    keys: :txes is the data to install, and :requires
-                    is a list of other schema names that must also
-                    be installed
-      schema-names  the names of schemas to install"
-  [conn schema-map & schema-names]
+(defn get-attrs "Gets map of all installed `db` schema attributes."
+  [db]
+  (->> (d/pull db '{:eid 0 :selector [{:db.install/attribute [*]}]})
+       :db.install/attribute
+       (remove (fn [m] (str/starts-with? (namespace (:db/ident m)) "db")))
+       (map #(update % :db/valueType :db/ident))
+       (map #(update % :db/cardinality :db/ident))))
+
+(defn ensure-ready
+  "Ensure that `schema` migrations have run (TODO) and attributes have been installed.
+   See [[read-edn]] for configuration details."
+  [conn schema]
   (ensure-dation-attrs conn)
-  (doseq [schema-name schema-names]
-    (when-not (installed? (d/db conn) schema-name)
-      (let [{:keys [requires txes]} (get schema-map schema-name)]
-        (apply ensure-schemas conn schema-map requires)
-        (if txes
-          (doseq [tx txes]
-            (d/transact conn {:tx-data (cons {;; TODO
-                                              :dation.schema/name schema-name}
-                                             tx)}))
-          (throw (ex-info (str "No data provided for schema" schema-name)
-                          {:schema/missing schema-name})))))))
+  (let [name    (:name schema) 
+        version (:version schema)]
+    (when-not (installed? (d/db conn) name version)
+      (doseq [attrs (:installs schema)]
+        (d/transact conn {:tx-data (cons {:dation.schema/name    name
+                                          :dation.schema/version version}
+                                         attrs)})))
+    :ready))

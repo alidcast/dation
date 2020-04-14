@@ -1,4 +1,4 @@
-{:name     :demo-schema
+{:name     :my-schema
  :version  "1.0"
  :installs [#ent #:user{:username  [:db.type/string :db.cardinality/one :db.unique/identity]
                         :email     [:db.type/string :db.cardinality/one :db.unique/identity]

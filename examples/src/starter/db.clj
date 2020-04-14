@@ -1,4 +1,4 @@
-(ns demo.db
+(ns starter.db
   (:require [clojure.java.io :as io]
             [datomic.client.api :as d]
             [rejure.dation.schema :as dschema]
