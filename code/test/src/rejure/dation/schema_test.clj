@@ -21,8 +21,6 @@
         (testing "form: {ident attrs-map}"
           (is (= (read-edn "#ent #:user{:username {:db/valueType  :db.type/string
                                                    :db/cardinality :db.cardinality/one}}")
-
-
                  [{:db/ident       :user/username
                    :db/valueType  :db.type/string
                    :db/cardinality :db.cardinality/one}])))

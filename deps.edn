@@ -1,10 +1,13 @@
-{:paths ["code/src"]
+{:paths ["code/main"]
 
  :aliases
- {:example
-  {:extra-paths ["example/src" "example/resources"]
-   :extra-deps {com.datomic/client-cloud {:mvn/version "0.8.81"}}}
+ {:dev
+  {:extra-paths ["code/dev"]
+   :extra-deps  {com.datomic/client-cloud {:mvn/version "0.8.81"}}}
 
   :test
-  {:extra-paths ["dev" "test"]
-   :extra-deps  {lambdaisland/kaocha {:mvn/version "0.0-554"}}}}}
+  {:extra-paths ["code/test/resources" "code/test/src"]
+   :extra-deps  {lambdaisland/kaocha {:mvn/version "0.0-554"}}}
+
+  :example
+  {:extra-paths ["example/src" "example/resources"]}}}

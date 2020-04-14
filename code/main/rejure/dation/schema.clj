@@ -1,9 +1,7 @@
 (ns rejure.dation.schema "Datomic schema accretion tools."
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
-            [datomic.client.api :as d]
-            [rejure.dation.attr :as d-attr]
-            ))
+            [datomic.client.api :as d]))
 
 ;; # Schema Accretion Tools
 ;; Provides config reader, attribute installer, and migration runner.
@@ -96,9 +94,16 @@
 ;; ## Attribute Installer
 ;; Ensures that given schema attributes are install in database.
 
+(defn has-attr? "Checks if `db` has attribute by `ident`."
+  [db ident]
+  (-> (d/pull db {:selector '[:db/valueType]
+                  :eid ident})
+      seq
+      boolean))
+
 (defn ensure-dation-attrs "Ensures that attributes used for tracking schema accretions are installed."
   [conn]
-  (when-not (d-attr/exists? (d/db conn) :dation.schema/install)
+  (when-not (has-attr? (d/db conn) :dation.schema/install)
     (d/transact conn {:tx-data (ent->datomic-attr-map
                                 {:dation.schema/name    [:db.type/keyword :db.cardinality/many]
                                  :dation.schema/version [:db.type/string  :db.cardinality/one]})})))
