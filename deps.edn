@@ -1,4 +1,4 @@
-{:paths ["code/main"]
+{:paths ["code/src"]
 
  :aliases
  {:dev
@@ -6,7 +6,7 @@
    :extra-deps  {com.datomic/client-cloud {:mvn/version "0.8.81"}}}
 
   :test
-  {:extra-paths ["code/test/resources" "code/test/src"]
+  {:extra-paths ["code/test/fixtures" "code/test/unit"]
    :extra-deps  {lambdaisland/kaocha {:mvn/version "0.0-554"}}}
 
   :example
