@@ -9,20 +9,6 @@
 ;; ## Config Reader 
 ;; Provides shortshands for declaring datomic schema attributes.
 
-;; ~~ TODOS ~~
-;; ## installs
-;; - need a function to get all schemas and their attribute checks
-;; - consider where installs should be ascending or descending, or even in place with version numbers.
-;; ## predicates 
-;; - todo does not seem to be a way to curry arguments, open up issue in datomic about this
-;; :ensures  [[:schema.fk [:file.owner] ['dation.preds/valid-fk? :user/id]]]
-;; ## extra attrs 
-;; - handle docs and extra attributes i.e. [doc [...attrs] {:schema/deprecated true}]
-;; ## versioning / migrations 
-;; maybe keep count of schema attributes / migrations and make sure non are deleted 
-;; so verisioning can force update but it can't detract? 
-;; well.. unless you're trying to remove an entity but maybe we should make that explicit.
-
 (defn- attr->datomic-attr-map
   "Converts generic attribute shorthand to datomic attribute map.
    Excepts vector `v` of [ident type cardinality (?unique | ?component) ?pred]"
@@ -101,7 +87,7 @@
       seq
       boolean))
 
-(defn ensure-dation-attrs "Ensures that attributes used for tracking schema accretions are installed."
+(defn ensure-admin-attrs "Ensures that attributes used for tracking schema accretions are installed."
   [conn]
   (when-not (has-attr? (d/db conn) :dation.schema/install)
     (d/transact conn {:tx-data (ent->datomic-attr-map
@@ -131,7 +117,7 @@
   "Ensure that `schema` migrations have run (TODO) and attributes have been installed.
    See [[read-edn]] for configuration details."
   [conn schema]
-  (ensure-dation-attrs conn)
+  (ensure-admin-attrs conn)
   (let [name    (:name schema) 
         version (:version schema)]
     (when-not (installed? (d/db conn) name version)
