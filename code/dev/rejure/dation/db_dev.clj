@@ -1,16 +1,18 @@
 (ns rejure.dation.db-dev
   (:require [datomic.client.api :as d]))
 
-(def db-name "dation/db-dev")
+(defn $name "Get db name for given environment."
+  [env] (str "dation-db-" (name env)))
 
-(defn get-info []
-    {:system  (System/getenv "DB_SYSTEM")
-     :profile (System/getenv "AWS_PROFILE")
-     :region  (System/getenv "AWS_REGION")})
+(defn $info "Get env info."
+  []
+  {:system  (System/getenv "DB_SYSTEM")
+   :profile (System/getenv "AWS_PROFILE")
+   :region  (System/getenv "AWS_REGION")})
 
-(def get-client "Get local system's database client."
+(def $client "Get local system's database client."
   (memoize (fn []
-             (let [info     (get-info)
+             (let [info     ($info)
                    system   (:system info)
                    profile  (:profile info)
                    region   (:region info)]
@@ -24,20 +26,19 @@
                             :endpoint      (format "http://entry.%s.%s.datomic.net:8182/" system region)
                             :proxy-port   8182}))))))
 
-(defn get-conn "Get local system's database connection."
-  [] (d/connect (get-client) {:db-name db-name}))
+(defn $conn "Get local system's database connection."
+  [env] (d/connect ($client) {:db-name ($name env)}))
 
-(defn get-inst "Get local system's database instance."
-  [] (d/db (get-conn)))
+(defn $inst "Get local system's database instance."
+  [env] (d/db ($conn env)))
 
 (comment
   ;; Test env info and connection
-  (get-info)
-  (get-client)
-  (get-conn)
+  ($info)
+  ($client)
+  ($conn :dev)
   
   ;; Manage database
-  (d/create-database (get-client) {:db-name db-name})
-  (d/delete-database (get-client) {:db-name db-name})
-  
+  (d/create-database ($client) {:db-name ($name :dev) })
+  (d/delete-database ($client) {:db-name ($name :dev)})
   )

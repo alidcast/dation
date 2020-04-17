@@ -1,0 +1,5 @@
+{:name :test-schema 
+ :version "1.0"
+ :installs [#ent #:user{:name     [:db.type/string :db.cardinality/one :db.unique/identity]
+                        :email    [:db.type/string :db.cardinality/one :db.unique/identity]
+                        :password [:db.type/string :db.cardinality/one]}]}

@@ -9,7 +9,7 @@
 ;; ## Config Reader 
 ;; Provides shortshands for declaring datomic schema attributes.
 
-;; TODOS
+;; ~~ TODOS ~~
 ;; ## installs
 ;; - need a function to get all schemas and their attribute checks
 ;; - consider where installs should be ascending or descending, or even in place with version numbers.
@@ -108,14 +108,13 @@
                                 {:dation.schema/name    [:db.type/keyword :db.cardinality/many]
                                  :dation.schema/version [:db.type/string  :db.cardinality/one]})})))
 
-;; also check version!
-;; check less than current version..
 (defn installed? "Checks if `db` has attributes of schema name `sn` and version `sv` installed."
   [db sn sv]
   (and (-> (d/q {:query '[:find ?e
                           :in $ ?sn ?sv
                           :where [?e :dation.schema/name ?sn]
-                                 [?e :dation.schema/version ?sv]]
+                                 [?e :dation.schema/version ?v]
+                                 [(<= ?sv ?v)]]
                  :args [db sn sv]})
            seq
            boolean)))
