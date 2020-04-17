@@ -105,7 +105,7 @@
            seq
            boolean)))
 
-(defn get-attrs "Gets map of all installed `db` schema attributes."
+(defn attrs "Gets map of all installed `db` schema attributes."
   [db]
   (->> (d/pull db '{:eid 0 :selector [{:db.install/attribute [*]}]})
        :db.install/attribute

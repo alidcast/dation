@@ -3,11 +3,11 @@
             [rejure.dation.db-dev :as db]))
 
 (defn db-fixture [tests]
-  (d/create-database (db/$client) {:db-name (db/$name :test)})
-  (d/delete-database (db/$client) {:db-name (db/$name :test)})
+  (d/create-database (db/client) {:db-name (db/ename :test)})
+  (d/delete-database (db/client) {:db-name (db/ename :test)})
   (tests)
   )
 
 
 (comment 
-  (db/$conn :test))
+  (db/conn :test))

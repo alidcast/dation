@@ -38,33 +38,33 @@
 
 (defn reset-db! []
   ;; TODO issues with teardown, likely async issues
-  ; (d/delete-database (db/$client) {:db-name (db/$name :test)})
-  (d/create-database (db/$client) {:db-name (db/$name :test)}))
+  ; (d/delete-database (db/client) {:db-name (db/ename :test)})
+  (d/create-database (db/client) {:db-name (db/ename :test)}))
 
 (defn $schema-attrs "Gets user installed database attributes, filtering out fressian and dation namespaces."
   []
   (into [] 
         (filter
          (fn [m] (not-any? #(str/includes? (namespace (get m :db/ident)) %) ["fressian" "dation.schema"]))
-         (ds/get-attrs (db/$inst :test)))))
+         (ds/attrs (db/inst :test)))))
 
 (deftest ensure-ready 
   (reset-db!)
   (let [schema (ds/read-edn (slurp (io/reader "code/test/fixtures/schema.edn")))]
     (testing "installs attributes"
-      (ds/ensure-ready (db/$conn :test) schema)
+      (ds/ensure-ready (db/conn :test) schema)
       (is (= (map #(get % :ident) ($schema-attrs))
              (map #(get % :ident) (first (:installs schema)))
              )))
     
     (testing "checks installed attributes for given version"
       (testing "cond: same version"
-        (is (= (ds/installed? (db/$inst :test) :test-schema "1.0")
+        (is (= (ds/installed? (db/inst :test) :test-schema "1.0")
                true)))
       (testing "cond: greater version"
-        (is (= (ds/installed? (db/$inst :test) :test-schema "1.2")
+        (is (= (ds/installed? (db/inst :test) :test-schema "1.2")
                false)))
       (testing "cond: smaller version"
-        (is (= (ds/installed? (db/$inst :test) :test-schema "0.9")
+        (is (= (ds/installed? (db/inst :test) :test-schema "0.9")
                true))))))
 
