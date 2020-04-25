@@ -1,11 +1,10 @@
-(ns rejure.dation.schema-test
+(ns dation.schema-test
   (:require [clojure.test :refer [deftest testing is] :as t]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [datomic.client.api :as d]
-            [rejure.dation.db-dev :as db]
-            ; [rejure.dation-test-setup :as dts]
-            [rejure.dation.schema :as ds]))
+            [dation.db-dev :as db]
+            [dation.schema :as ds]))
 
 (deftest reader-edn-test
   (let [test ds/read-edn]
@@ -41,7 +40,7 @@
   ; (d/delete-database (db/client) {:db-name (db/ename :test)})
   (d/create-database (db/client) {:db-name (db/ename :test)}))
 
-(defn $schema-attrs "Gets user installed database attributes, filtering out fressian and dation namespaces."
+(defn schema-attrs "Gets user installed database attributes, filtering out fressian and dation namespaces."
   []
   (into [] 
         (filter
@@ -50,10 +49,10 @@
 
 (deftest ensure-ready 
   (reset-db!)
-  (let [schema (ds/read-edn (slurp (io/reader "code/test/fixtures/schema.edn")))]
+  (let [schema (ds/read-edn (slurp (io/reader "test/fixtures/schema.edn")))]
     (testing "installs attributes"
       (ds/ensure-ready (db/conn :test) schema)
-      (is (= (map #(get % :ident) ($schema-attrs))
+      (is (= (map #(get % :ident) (schema-attrs))
              (map #(get % :ident) (first (:installs schema)))
              )))
     

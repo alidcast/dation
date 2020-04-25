@@ -1,4 +1,4 @@
-(ns rejure.dation.schema "Datomic schema accretion tools."
+(ns dation.schema "Datomic schema accretion tools."
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
             [datomic.client.api :as d]))
@@ -69,9 +69,7 @@
 
 (defn read-edn 
   "Reads schema configuration edn string `s`.
-   THe config should be a map with the following properties: 
-      :version     Current version number of database. 
-                   Should be incremented whenever :install or :migrations change. 
+   The config should be a map with the following properties: 
       :installs    List of schema attributes to install.
       :migrations  List of data migrations to run."
   [s] (edn/read-string {:readers (create-readers)}
@@ -87,6 +85,7 @@
       seq
       boolean))
 
+
 (defn ensure-admin-attrs "Ensures that attributes used for tracking schema accretions are installed."
   [conn]
   (when-not (has-attr? (d/db conn) :dation.schema/install)
@@ -99,8 +98,8 @@
   (and (-> (d/q {:query '[:find ?e
                           :in $ ?sn ?sv
                           :where [?e :dation.schema/name ?sn]
-                                 [?e :dation.schema/version ?v]
-                                 [(<= ?sv ?v)]]
+                          [?e :dation.schema/version ?v]
+                          [(<= ?sv ?v)]]
                  :args [db sn sv]})
            seq
            boolean)))
@@ -118,7 +117,7 @@
    See [[read-edn]] for configuration details."
   [conn schema]
   (ensure-admin-attrs conn)
-  (let [name    (:name schema) 
+  (let [name    (:name schema)
         version (:version schema)]
     (when-not (installed? (d/db conn) name version)
       (doseq [attrs (:installs schema)]

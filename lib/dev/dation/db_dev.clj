@@ -1,4 +1,4 @@
-(ns rejure.dation.db-dev
+(ns dation.db-dev
   (:require [datomic.client.api :as d]))
 
 (defn ename "Get db name for given environment."
@@ -17,7 +17,7 @@
                    profile  (:profile info)
                    region   (:region info)]
                (if-not (every? some? [system profile region])
-                 (throw (Exception. "Dev environment not setup, run 'source env'."))
+                 (throw (Exception. "Environment not setup, run `source env`."))
                  (d/client {:server-type   :ion
                             :creds-profile profile
                             :region        region
