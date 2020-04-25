@@ -46,7 +46,7 @@ Dation, motivation:
 
 Design goals:
 
-1. The Datomic database schema serves is the source of truth (no DSL).
+1. Use the Datomic database schema as the source of truth (no DSL).
 2. Make Datomic schema configurations explicit, taking advantage of EDN and reader literals.
 3. Work well with the accretion-only model Datomic encourages.
 4. Provide shorthands for declaring datomic attribute maps without sacrificing semantic meaning.
