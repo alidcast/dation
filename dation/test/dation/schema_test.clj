@@ -1,9 +1,5 @@
 (ns dation.schema-test
   (:require [clojure.test :refer [deftest testing is] :as t]
-            [clojure.java.io :as io]
-            [clojure.string :as str]
-            [datomic.client.api :as d]
-            [dation.db-dev :as db]
             [dation.schema :as ds]))
 
 (deftest test-read-edn
