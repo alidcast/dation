@@ -1,4 +1,4 @@
-{:paths ["src" "resources"]
+{:paths ["src"]
 
  :deps {dation {:local/root "../.."}
         com.datomic/client-cloud {:mvn/version "0.8.81"}}}

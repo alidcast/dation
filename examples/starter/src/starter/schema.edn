@@ -1,0 +1,4 @@
+{:name     :my-app
+ :installs [#db/ent #:user{:username  [:db.type/string :db.cardinality/one :db.unique/identity]
+                           :email     [:db.type/string :db.cardinality/one :db.unique/identity]
+                           :password  [:db.type/string :db.cardinality/one]}]}

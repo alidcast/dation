@@ -58,12 +58,14 @@
     (throw (AssertionError. "#enum declaration must be a keyword."))
     {:db/ident kw}))
 
-(defn create-readers "Create edn reader literal attribute shorthands."
+(defn create-readers 
+  "Create edn reader literal attribute shorthands.
+   Similar to Datomic, all reader literals are namespaced with `db` key."
   []
-  {'attr attr->datomic-attr-map
-   'ent  ent->datomic-attr-map
-   'spec spec->datomic-attr-map
-   'enum enum->datomic-attr-map})
+  {'db/attr  attr->datomic-attr-map
+   'db/ent   ent->datomic-attr-map
+   'db/spec  spec->datomic-attr-map
+   'db/enum  enum->datomic-attr-map})
 
 (defn read-edn 
   "Reads schema configuration edn string `s`.
@@ -88,17 +90,14 @@
   [conn]
   (when-not (has-attr? (d/db conn) :dation.schema/install)
     (d/transact conn {:tx-data (ent->datomic-attr-map
-                                {:dation.schema/name    [:db.type/keyword :db.cardinality/many]
-                                 :dation.schema/version [:db.type/string  :db.cardinality/one]})})))
+                                {:dation.schema/name [:db.type/keyword :db.cardinality/one]})})))
 
-(defn installed? "Checks if `db` has attributes of schema name `sn` and version `sv` installed."
-  [db sn sv]
+(defn installed? "Checks if `db` has attributes of schema name `sn` installed."
+  [db sn]
   (and (-> (d/q {:query '[:find ?e
                           :in $ ?sn ?sv
-                          :where [?e :dation.schema/name ?sn]
-                          [?e :dation.schema/version ?v]
-                          [(<= ?sv ?v)]]
-                 :args [db sn sv]})
+                          :where [?e :dation.schema/name ?sn]]
+                 :args [db sn]})
            seq
            boolean)))
 
@@ -115,11 +114,9 @@
    See [[read-edn]] for configuration details."
   [conn schema]
   (ensure-admin-attrs conn)
-  (let [name    (:name schema)
-        version (:version schema)]
-    (when-not (installed? (d/db conn) name version)
+  (let [name    (:name schema)]
+    (when-not (installed? (d/db conn) name)
       (doseq [attrs (:installs schema)]
-        (d/transact conn {:tx-data (cons {:dation.schema/name    name
-                                          :dation.schema/version version}
+        (d/transact conn {:tx-data (cons {:dation.schema/name name}
                                          attrs)})))
     :ready))

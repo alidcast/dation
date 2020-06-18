@@ -1,10 +1,10 @@
 {:deps {dation/dation {:local/root "./dation"}}
  :aliases
  {:dev
-  {:extra-paths ["dation/dev"]
-   :extra-deps  {com.datomic/client-cloud {:mvn/version "0.8.81"}}}
+  {:extra-deps  {examples/starter {:local/root "./examples/starter"}
+                 com.datomic/client-cloud {:mvn/version "0.8.81"}}}
 
   :test
-  {:extra-paths ["dation/test/fixtures"
-                 "dation/test/unit"]
+  {:main-opts   ["-m" "kaocha.runner"]
+   :extra-paths ["dation/test"]
    :extra-deps  {lambdaisland/kaocha {:mvn/version "0.0-554"}}}}}
