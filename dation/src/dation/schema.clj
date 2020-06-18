@@ -1,13 +1,11 @@
-(ns dation.schema "Datomic schema accretion tools."
+(ns dation.schema 
+  "Datomic schema accretion tools."
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
             [datomic.client.api :as d]))
 
-;; # Schema Accretion Tools
-;; Provides config reader, attribute installer, and migration runner.
-
-;; ## Config Reader 
-;; Provides shortshands for declaring datomic schema attributes.
+;; # Config Reader 
+;; Edn literal shortshands for declaring datomic schema attributes.
 
 (defn- attr->datomic-attr-map
   "Converts generic attribute shorthand to datomic attribute map.
@@ -75,7 +73,7 @@
   [s] (edn/read-string {:readers (create-readers)}
                        s))
 
-;; ## Attribute Installer
+;; # Attribute Installer
 ;; Ensures that given schema attributes are install in database.
 
 (defn has-attr? "Checks if `db` has attribute by `ident`."

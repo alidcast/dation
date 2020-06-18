@@ -6,21 +6,29 @@
             [dation.db-dev :as db]
             [dation.schema :as ds]))
 
-(deftest reader-edn-test
+(deftest test-read-edn
   (let [test ds/read-edn]
     (testing "reads edn literals correctly"
       (testing "#attr converts shorthand vector to datomic attribute map"
         (testing "form: [ident type cardinality]"
           (is (= (test "[#attr [:user/username :db.type/string :db.cardinality/one]]")
                  [{:db/ident       :user/username
-                   :db/valueType  :db.type/string
+                   :db/valueType   :db.type/string
                    :db/cardinality :db.cardinality/one}])))
         (testing "form: [ident type cardinality unique]"
           (is (= (test "[#attr [:user/username :db.type/string :db.cardinality/one :db.unique/identity]]")
                  [{:db/ident       :user/username
-                   :db/valueType        :db.type/string
+                   :db/valueType   :db.type/string
                    :db/cardinality :db.cardinality/one
-                   :db/unique      :db.unique/identity}]))))
+                   :db/unique      :db.unique/identity}])))
+        ;; (testing "form: [ident type cardinality unique pred]"
+        ;;   (is (= (test "[#attr [:user/username :db.type/string :db.cardinality/one :db.unique/identity foo]]")
+        ;;          [{:db/ident       :user/username
+        ;;            :db/valueType   :db.type/string
+        ;;            :db/cardinality :db.cardinality/one
+        ;;            :db/unique      :db.unique/identity
+        ;;            :db.attr/preds  'foo}])))
+        )
       (testing "#ent converts shorthand vector to datomic attribute map"
         (testing "form: {ident attrs-map}"
           (is (= (test "#ent #:user{:username {:db/valueType  :db.type/string
@@ -34,7 +42,6 @@
                     :db/valueType  :db.type/string
                     :db/cardinality :db.cardinality/one}]])))))))
 
-
 (defn reset-db! []
   ;; TODO issues with teardown, likely async issues
   ; (d/delete-database (db/client) {:db-name (db/ename :test)})
@@ -47,15 +54,14 @@
          (fn [m] (not-any? #(str/includes? (namespace (get m :db/ident)) %) ["fressian" "dation.schema"]))
          (ds/attrs (db/inst :test)))))
 
-(deftest ensure-ready 
+(deftest test-ensure-ready 
   (reset-db!)
-  (let [schema (ds/read-edn (slurp (io/reader "test/fixtures/schema.edn")))]
+  (let [schema (ds/read-edn (slurp (io/reader "lib/test/fixtures/schema.edn")))]
     (testing "installs attributes"
       (ds/ensure-ready (db/conn :test) schema)
       (is (= (map #(get % :ident) (schema-attrs))
-             (map #(get % :ident) (first (:installs schema)))
-             )))
-    
+             (map #(get % :ident) (first (:installs schema))))))
+
     (testing "checks installed attributes for given version"
       (testing "cond: same version"
         (is (= (ds/installed? (db/inst :test) :test-schema "1.0")

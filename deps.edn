@@ -1,10 +1,10 @@
-{:paths ["lib/src"]
-
+{:deps {dation/dation {:local/root "./dation"}}
  :aliases
  {:dev
-  {:extra-paths ["lib/dev"]
+  {:extra-paths ["dation/dev"]
    :extra-deps  {com.datomic/client-cloud {:mvn/version "0.8.81"}}}
 
   :test
-  {:extra-paths ["lib/test/fixtures" "lib/test/unit"]
+  {:extra-paths ["dation/test/fixtures"
+                 "dation/test/unit"]
    :extra-deps  {lambdaisland/kaocha {:mvn/version "0.0-554"}}}}}
