@@ -95,7 +95,7 @@
 (defn installed? "Checks if `db` has attributes of schema name `sn` installed."
   [db sn]
   (and (-> (d/q {:query '[:find ?e
-                          :in $ ?sn ?sv
+                          :in $ ?sn
                           :where [?e :dation.schema/name ?sn]]
                  :args [db sn]})
            seq
@@ -114,7 +114,7 @@
    See [[read-edn]] for configuration details."
   [conn schema]
   (ensure-admin-attrs conn)
-  (let [name    (:name schema)]
+  (let [name (:name schema)]
     (when-not (installed? (d/db conn) name)
       (doseq [attrs (:installs schema)]
         (d/transact conn {:tx-data (cons {:dation.schema/name name}
