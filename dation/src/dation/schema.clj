@@ -1,12 +1,17 @@
-(ns dation.schema 
+(ns dation.schema
   "Datomic schema accretion tools."
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
             [datomic.client.api :as d]
             [clojure.spec.alpha :as s]))
 
-;; # Config Reader 
-;; Edn literal shortshands for declaring datomic schema attributes.
+;; # Config Reader Literals
+;; Edn literal shortshands for defining Datomic schema attributes.
+
+;; == #db/attr == 
+
+(s/def ::attr-preds
+  #(or (symbol? %) (every? symbol? %)))
 
 (s/def ::attr-defs
   (s/cat :type keyword?
@@ -18,11 +23,12 @@
   (s/cat :ident keyword?
          :doc (s/? string?)
          :defs #(s/valid? ::attr-defs %)
-         :preds (s/? symbol?)))
+         :preds (s/? ::attr-preds)))
 
 (comment
-  (s/conform ::attr [:username [:db.type/string :db.cardinality/one :db.unique/identity]])
-  (s/conform ::attr [:username [:db.type/string :db.cardinality/one true]]))
+  (s/conform ::attr [:user/username [:db.type/string :db.cardinality/one]])
+  (s/conform ::attr [:user/username [:db.type/string :db.cardinality/one :db.unique/identity]])
+  (s/conform ::attr [:user/username [:db.type/string :db.cardinality/one true] 'db.fns/foo]))
 
 (defn- attr->datomic-attr-map
   "Converts generic attribute shorthand to datomic attribute map.
@@ -30,35 +36,56 @@
   [v]
   (let [parsed (s/conform ::attr v)]
     (if (= parsed ::s/invalid)
-      (throw (ex-info "Invalid #attr input." (s/explain-data ::attr parsed)))
+      (throw (ex-info "Invalid #db/attr input." (s/explain-data ::attr parsed)))
       (let [{:keys [ident doc preds]} parsed
             {:keys [type cardinality unique comp?]} (s/conform ::attr-defs (:defs parsed))]
-        (cond-> {:db/ident      ident
-                 :db/valueType  type
+        (cond-> {:db/ident       ident
+                 :db/valueType   type
                  :db/cardinality cardinality}
           (some? doc)    (assoc :db/doc doc)
           (some? unique) (assoc :db/unique unique)
           (some? comp?)  (assoc :db/isComponent comp?)
           (some? preds)  (assoc :db.attr/preds preds))))))
 
+(comment 
+  (attr->datomic-attr-map [:user/username [:db.type/string :db.cardinality/one]]))
+
+;; == #db/spec == 
+
+(s/def ::spec
+  (s/cat :ident  keyword?
+         :req-attrs (s/coll-of keyword?)
+         :preds (s/? ::attr-preds)))
+
+(comment
+  (s/conform ::spec [:user.spec/new [:user/email] 'foo]))
+
 (defn- spec->datomic-attr-map
   "Converts spec attribute shorthand to datomic attribute map.
    Excepts vector `v` of [ident req-attrs ?pred]"
   [v]
-  (if-not (and (vector? v) (>= (count v) 2))
-    (throw (AssertionError. "#spec declaration must be vector with ident and req-attrs."))
-    (let [[ident req-attrs] v
-          pred  (get v 2)
-          attrs  (cond->> {:db/ident        ident
-                           :db.entity/attrs req-attrs}
-                   (some? pred)   (merge {:db.attr/preds pred}))]
-      attrs)))
+  (let [parsed (s/conform ::attr v)]
+    (if (= parsed ::s/invalid)
+      (throw (ex-info "Invalid #db/spec input." (s/explain-data ::attr parsed)))
+      (let [{:keys [ident req-attrs preds]} parsed
+            pred  (get v 2)
+            attrs  (cond-> {:db/ident        ident
+                            :db.entity/attrs req-attrs}
+                     (some? pred) (assoc :db.attr/preds preds))]
+        attrs))))
+
+(comment 
+ (spec->datomic-attr-map [:user.spec/new [:user/username] 'db.fns/new-user?]))
+
+;; == #db/enum == 
 
 (defn- enum->datomic-attr-map
   [kw]
   (if-not (keyword? kw)
     (throw (AssertionError. "#enum declaration must be a keyword."))
     {:db/ident kw}))
+
+;; == schema readers == 
 
 (defn create-readers
   "Create edn reader literal attribute shorthands.
@@ -68,7 +95,7 @@
    'db/spec  spec->datomic-attr-map
    'db/enum  enum->datomic-attr-map})
 
-(defn read-edn 
+(defn read-edn
   "Reads schema configuration edn string `s`.
    The config should be a map with the following properties: 
       :installs    List of schema attributes to install.
