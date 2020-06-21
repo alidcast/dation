@@ -2,7 +2,6 @@
 
 - [Configuring your schema](#configuring-your-schema)
   - [Declaring Attributes](#declaring-attributes)
-- [Managing your schema](#managing-your-schema)
 
 *This documentation is still a WIP.*
 
@@ -19,44 +18,45 @@ List of available reader literals:
 
 ##### `db/attr`
 
-Generic attribute shorthand. Excepts vector of format `[ident type cardinality (?unique | ?isComponent) ?pred]`.
+Generic attribute shorthand. 
 
-When you're specifying an entities attributes you'll almost always want to specifiy its ident, type, and cardinality which is why this shorthand makes it easy to specifiy them as a vector.
+Expects vector of: `[ident ?doc constraints ?pred]`
 
-For the fourth item, if `type` is not a reference (i.e. `:db.type/ref`) then it expects a `:db.unique` value, if it is a reference then it expects an optional `:db/isComponent` boolean.
+The attributes `ident` keyword is always required, hence why its first.
 
-Lastly, the fifth item is an optional predicate symbol (TODO).
+An attributes `constraints` is a positional vector of built-in Datomic checks: `[type cardinality (?unique | ?isComponent)]`.
+
+As the last argument you can optionally pass an attribute's predicate symbol(s).
+
+Examples:
 
 ```clj
-#db/attr [:user/username :db.type/string :db.cardinality/one :db.unique/identity]
+#db/attr [:user/email [:db.type/string :db.cardinality/one :db.unique/identity]]
 ;; {:db/ident       :user/username
 ;;  :db/valueType   :db.type/string
 ;;  :db/cardinality :db.cardinality/one
 ;;  :db/unique      :db.unique/identity}
-```
 
-##### `db/ent` 
-
-Entity attribute shorthand, useful when declaring multiple attributes for the same namespace. Excepts a map of attribute declarations. Works similar to `#attr` literal except the `ident` declarations are keys in a map.
-
-```clj
-#db/ent {:user/username [:db.type/string :db.cardinality/one :db.unique/identity]
-         :user/email    [:db.type/string :db.cardinality/one :db.unique/identity]}
-;; [{:db/ident       :user/username
-;;  :db/valueType   :db.type/string
-;;  :db/cardinality :db.cardinality/one
-;;  :db/unique      :db.unique/identity}
+#db/attr [:user/username "Unique email for a user."
+          [:db.type/string :db.cardinality/one :db.unique/identity]
+          db.fns.attr-preds/email?]
 ;; {:db/ident       :user/email
+;;  :db/doc         "Unique email for a user."
 ;;  :db/valueType   :db.type/string
 ;;  :db/cardinality :db.cardinality/one
-;;  :db/unique      :db.unique/identity}]
+;;  :db/unique      :db.unique/identity
+;;  :db.attr/preds 'db.fns.attr-preds/email?}
 ```
 
 ##### `db/spec`
 
-// TODO, not yet ready for usage. 
+Entity spec attribute shorthand. 
 
-Spec attribute shorthand. Expects vector of following format: `[ident req-attrs ?pred]`
+Expects vector of following format: `[ident req-attrs ?pred]`.
+
+Require attributes `req-attrs` is a vector of attributes that must be present in transaction.
+
+Predicate `pred` is a symbol referencing an entity's predicate function.
 
 ```clj
 #db/spec [:doc.spec/owner-fk [:doc/owner] 'myapp.doc.preds/owner?]
@@ -64,8 +64,3 @@ Spec attribute shorthand. Expects vector of following format: `[ident req-attrs 
 ;;  :db.entity/attrs [:doc/owner]
 ;;  :db.entity/preds 'myapp.doc.preds/owner?}
 ```
-
-### Managing your schema
-
-* `ensure-ready`: ensure that schema attribute installs and data migrations are run.
-* `attrs`: get a list of install attributes.
