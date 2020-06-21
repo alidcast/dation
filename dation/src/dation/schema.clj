@@ -68,7 +68,7 @@
         (cond-> {:db/ident        ident
                  :db/doc         doc
                  :db.entity/attrs req-attrs}
-          (some? preds) (assoc :db.attr/preds preds))))))
+          (some? preds) (assoc :db.entity/preds preds))))))
 
 (comment
   (spec->datomic-attr-map [:user.spec/new [:user/username]])
