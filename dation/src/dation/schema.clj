@@ -2,42 +2,44 @@
   "Datomic schema accretion tools."
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
-            [datomic.client.api :as d]))
+            [datomic.client.api :as d]
+            [clojure.spec.alpha :as s]))
 
 ;; # Config Reader 
 ;; Edn literal shortshands for declaring datomic schema attributes.
 
+(s/def ::attr-defs
+  (s/cat :type keyword?
+         :cardinality keyword?
+         :unique (s/? keyword?)
+         :component (s/? boolean?)))
+
+(s/def ::attr
+  (s/cat :ident keyword?
+         :doc (s/? string?)
+         :defs #(s/valid? ::attr-defs %)
+         :preds (s/? symbol?)))
+
+(comment
+  (s/conform ::attr [:username [:db.type/string :db.cardinality/one :db.unique/identity]])
+  (s/conform ::attr [:username [:db.type/string :db.cardinality/one true]]))
+
 (defn- attr->datomic-attr-map
   "Converts generic attribute shorthand to datomic attribute map.
-   Excepts vector `v` of [ident type cardinality (?unique | ?component) ?pred]"
+   Excepts vector `v` of [ident ?doc [type cardinality (?unique | ?component)] ?pred]"
   [v]
-  (if-not (and (vector? v) (>= (count v) 3))
-    (throw (AssertionError. "#attr declaration must be vector with min of ident, type, and cardinality attrs."))
-    (let [[ident type cardinality] v
-          constraint (get v 3)
-          unique     (when (keyword? constraint) constraint)
-          comp?      (when (boolean? constraint) constraint)
-          pred       (get v 4)
-          attrs  (cond->> {:db/ident      ident
-                           :db/valueType  type
-                           :db/cardinality cardinality}
-                   (some? unique) (merge {:db/unique unique})
-                   (some? comp?)  (merge {:db/isComponent comp?})
-                   (some? pred)   (merge {:db.attr/preds pred}))]
-      attrs)))
-
-(defn- ent->datomic-attr-map 
-  "Converts entity attribute shorthand to datomic attribute map.
-   Exects map `m` of form '{ident attrs} where `attrs` is [type cardinality (?unique | ?component) ?pred]."
-  [m]
-  (if-not (map? m)
-    (throw (AssertionError. "#ent declaration must a map of {ident attrs}."))
-    (reduce (fn [acc [k v]]
-              (conj acc (if (vector? v)
-                          (attr->datomic-attr-map (into [k] v))
-                          (assoc v :db/ident k))))
-            []
-            m)))
+  (let [parsed (s/conform ::attr v)]
+    (if (= parsed ::s/invalid)
+      (throw (ex-info "Invalid #attr input." (s/explain-data ::attr parsed)))
+      (let [{:keys [ident doc preds]} parsed
+            {:keys [type cardinality unique comp?]} (s/conform ::attr-defs (:defs parsed))]
+        (cond-> {:db/ident      ident
+                 :db/valueType  type
+                 :db/cardinality cardinality}
+          (some? doc)    (assoc :db/doc doc)
+          (some? unique) (assoc :db/unique unique)
+          (some? comp?)  (assoc :db/isComponent comp?)
+          (some? preds)  (assoc :db.attr/preds preds))))))
 
 (defn- spec->datomic-attr-map
   "Converts spec attribute shorthand to datomic attribute map.
@@ -58,12 +60,11 @@
     (throw (AssertionError. "#enum declaration must be a keyword."))
     {:db/ident kw}))
 
-(defn create-readers 
+(defn create-readers
   "Create edn reader literal attribute shorthands.
    Similar to Datomic, all reader literals are namespaced with `db` key."
   []
   {'db/attr  attr->datomic-attr-map
-   'db/ent   ent->datomic-attr-map
    'db/spec  spec->datomic-attr-map
    'db/enum  enum->datomic-attr-map})
 
@@ -89,8 +90,9 @@
 (defn ensure-admin-attrs "Ensures that attributes used for tracking schema accretions are installed."
   [conn]
   (when-not (has-attr? (d/db conn) :dation.schema/install)
-    (d/transact conn {:tx-data (ent->datomic-attr-map
-                                {:dation.schema/name [:db.type/keyword :db.cardinality/one]})})))
+    (d/transact conn {:tx-data (attr->datomic-attr-map
+                                [:dation.schema/name "Schema name used by Dation to track attribute installs."
+                                 [:db.type/keyword :db.cardinality/one]])})))
 
 (defn installed? "Checks if `db` has attributes of schema name `sn` installed."
   [db sn]
@@ -115,6 +117,7 @@
   [conn schema]
   (ensure-admin-attrs conn)
   (let [name (:name schema)]
+    ;; todo: installing based on name only bc we removed version.. 
     (when-not (installed? (d/db conn) name)
       (doseq [attrs (:installs schema)]
         (d/transact conn {:tx-data (cons {:dation.schema/name name}
