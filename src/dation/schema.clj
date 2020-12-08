@@ -1,8 +1,11 @@
-(ns dation.schema "Define Datomic schema attributes in EDN."
+(ns dation.schema 
+  "Define Datomic schema attributes in EDN."
   (:require [clojure.edn :as edn]
             [clojure.spec.alpha :as s]))
 
-;; == #db/attr == 
+;;;; Schema literals
+
+;;;;;; #db/attr 
 
 (s/def ::attr-preds
   #(or (symbol? %) (every? symbol? %)))
@@ -18,11 +21,6 @@
          :doc (s/? string?)
          :defs #(s/valid? ::attr-defs %)
          :preds (s/? ::attr-preds)))
-
-(comment
-  (s/conform ::attr [:user/username [:db.type/string :db.cardinality/one]])
-  (s/conform ::attr [:user/username [:db.type/string :db.cardinality/one :db.unique/identity]])
-  (s/conform ::attr [:user/username [:db.type/string :db.cardinality/one true] 'db.fns/foo]))
 
 (defn- attr->datomic-attr-map
   "Converts generic attribute shorthand to datomic attribute map.
@@ -41,10 +39,7 @@
           (some? comp?)  (assoc :db/isComponent comp?)
           (some? preds)  (assoc :db.attr/preds preds))))))
 
-(comment 
-  (attr->datomic-attr-map [:user/username [:db.type/string :db.cardinality/one]]))
-
-;; == #db/spec == 
+;;;;;; #db/spec 
 
 (s/def ::spec
   (s/cat :ident  keyword?
@@ -52,16 +47,11 @@
          :req-attrs (s/coll-of keyword?)
          :preds (s/? ::attr-preds)))
 
-(comment
-  (s/conform ::spec [:user.spec/new [:user/email] 'foo]))
-
-
 (defn- spec->datomic-attr-map
   "Converts spec attribute shorthand to datomic attribute map.
    Excepts vector `v` of [ident req-attrs ?pred]"
   [v]
   (let [parsed (s/conform ::spec v)]
-    (println parsed)
     (if (= parsed ::s/invalid)
       (throw (ex-info "Invalid #db/spec input." (s/explain-data ::spec parsed)))
       (let [{:keys [ident doc req-attrs preds]} parsed]
@@ -70,11 +60,7 @@
                  :db.entity/attrs req-attrs}
           (some? preds) (assoc :db.entity/preds preds))))))
 
-(comment
-  (spec->datomic-attr-map [:user.spec/new [:user/username]])
-  (spec->datomic-attr-map [:user.spec/new [:user/username] 'db.fns/new-user?]))
-
-;; == #db/enum == 
+;;;;;; #db/enum 
 
 (defn- enum->datomic-attr-map
   [kw]
@@ -82,7 +68,7 @@
     (throw (AssertionError. "#enum declaration must be a keyword."))
     {:db/ident kw}))
 
-;; == schema readers == 
+;;;; Schema reader 
 
 (defn create-readers
   "Create edn reader literal attribute shorthands.

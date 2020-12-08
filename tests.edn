@@ -1,5 +1,0 @@
-#kaocha/v1
-#merge [{:tests [{:id           :unit
-                  :source-paths ["dation/src"]
-                  :test-paths   ["dation/test"]}]
-         :fail-fast? true}]
