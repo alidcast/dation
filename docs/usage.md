@@ -1,3 +1,5 @@
+## Dation Usage
+
 ### Configuring your schema
 
 Your schema expects the following properties:
@@ -6,6 +8,9 @@ Your schema expects the following properties:
 * `installs`: vector of schema attributes to install.
 
 #### Declaring Attributes
+
+* Similar to Datomic, all schema reader literals are namespaced with `db`.
+* Datomic value types (e.g. `db.type/string`) are not shortened so as to not sacrifice semantic meaning.
 
 List of available reader literals:
 
